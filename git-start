@@ -1,0 +1,19 @@
+
+#reset File
+
+source workflow.library
+
+
+arguments="";
+
+if [ $# != 1 ]; 
+then
+	printf "*********************** ERRORS ******************\n" >> error.txt;
+	printf "%sUsage: git create-feature [feature-branch-name]" >> error.txt;
+else
+
+	lv=$(create_feature "$1");
+fi;
+
+cleanup_tmp_files;
+

@@ -1,0 +1,33 @@
+
+#reset File
+
+source workflow.library
+
+
+arguments="";
+
+do_pr=true;
+
+while [ "$1" != "" ]; do
+    printf "\nRead next command argument as [$1]\n" >> debug.txt;
+    if [ "$1" == "--no-pull-request" ];
+	then
+    	printf "\nFound the -no-pull-request flag [$1]\n" >> debug.txt;
+	do_pr=false;
+	shift
+    else
+    arguments="$arguments$1";
+    # Shift all the parameters down by one
+    shift
+    fi;
+done
+
+lv=$(test_feature "$arguments" "$do_pr")
+if [ $lv == 0 ]; then
+echo 'Run "git log -1" to see the list of tickets added to this QA branch';
+else
+echo "Experienced Failures Running process. Please check error msgs below.";
+fi
+
+cleanup_tmp_files;
+
