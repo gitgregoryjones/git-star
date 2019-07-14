@@ -7,4 +7,4 @@ A set of drop-dead simple commands to:
 * (A)sk other developers to review the generated pull request
   * optional (done automatically)
 * (R)elease the set of features to the master branch 
-  *Ex: "git release"
+  * Ex: "git release"
