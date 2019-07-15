@@ -1,5 +1,6 @@
 #!/bin/bash
-printf "%sSuccessfully loaded workflow library\n";
+printf "%s\n" "Successfully loaded workflow library";
+printf "%s\n" "version:$(pwd)";
 
 
 common_func () { 
@@ -92,7 +93,7 @@ release_features () {
 			printf "%s" "$new_log_messages" >> debug.txt;
 			mergeResult=$?;
 			printf "\n%s\n" "step3=git tag -a v$current_qa_tag_version testmaster -m Releasing version v$current_qa_tag_version from QA to Production" >> debug.txt;
-			step3=$(git tag -a v$current_qa_tag_version -m "$new_log_messages");
+			step3=$(git tag -a v$current_qa_tag_version testmaster -m "$new_log_messages");
 			printf "%s\n" "step4=git push origin v$current_qa_tag_version" >> debug.txt;
 			step4=$(git push origin v$current_qa_tag_version);
 
@@ -270,13 +271,13 @@ setup_master_branch () {
 	master_branch=$(git ls-remote | grep $1);
 	if [ -z "$master_branch" ];
 		then
-		printf "%s\n" "Creating master branch [$1] since does not exist"; 
+		printf "%s\n" "Creating master branch [$1] since does not exist" >> debug.txt; 
 		new_branch=$(git checkout -b $1 && git push -u origin $1);
 	fi;
-	tags=$(git ls-remote --tags | v1.0.0);
+	tags=$(git ls-remote --tags | grep v1.0.0);
 	if [ -z "$tags" ];
 		then
-		printf "%s\n" "No Release tags found. Initializing first tags for any future releases. Note: nothing pushed to production. Just initializing...";
+		printf "%s\n" "No Release tags found. Initializing first tags for any future releases. Note: nothing pushed to production. Just initializing..." >> debug.txt;
 		remote_tags=$(git tag v1.0.0 && git push origin v1.0.0);
 	fi;
 }
