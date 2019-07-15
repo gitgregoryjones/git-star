@@ -5,6 +5,6 @@ A set of drop-dead simple commands to:
 * (T)est the feature on a combined branch 
   * Ex: "git test feature-1, hotfix-one"
 * (A)sk other developers to review the generated pull request
-  * request generated automatically
+  * note: the request is generated automatically
 * (R)elease the set of features to the master branch 
   * Ex: "git release"
