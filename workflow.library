@@ -265,7 +265,26 @@ cleanup_tmp_files () {
 	printf "\n*************************** END OF DEBUG MSGS *************************\n";
 }
 
+setup_master_branch () {
+
+	master_branch=$(git ls-remote | grep $1);
+	if [ -z "$master_branch" ];
+		then
+		printf "%s\n" "Creating master branch [$1] since does not exist"; 
+		new_branch=$(git checkout -b $1 && git push -u origin $1);
+	fi;
+	tags=$(git ls-remote --tags | v1.0.0);
+	if [ -z "$tags" ];
+		then
+		printf "%s\n" "No Release tags found. Initializing first tags for any future releases. Note: nothing pushed to production. Just initializing...";
+		remote_tags=$(git tag v1.0.0 && git push origin v1.0.0);
+	fi;
+}
+	
+
 initialize_tmp_files () {
+
+	result=$(setup_master_branch "testmaster");
 
 	$(echo "" > temp_merge_msg && echo "" > debug.txt && echo "" > error.txt);
 

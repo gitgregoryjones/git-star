@@ -1,0 +1,3 @@
+#!/bin/bash
+printf "version:%s\narchive:%s" "1.1" "https://github.com/gitgregoryjones/homebrew-git-star/releases/download/v1.1/git-star-1.1.tar.gz"
+
