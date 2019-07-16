@@ -75,7 +75,7 @@ release_features () {
 			printf "%s\n" "step1=git checkout QAv$current_tag_version && git pull && git checkout master && git pull" >> debug.txt;
 			step0=$(git checkout QAv$current_qa_tag_version && git pull);
 			
-			step1=$(git checkout testmaster && git pull origin );
+			step1=$(git checkout $1 && git pull origin );
 			# Get log messages from QA branch to annotate the tag
 			#last_commit_date=$(git log -n 1 | grep Date | cut -d':' -f2 -f3 -f4);
 			#Artficially set last commit time to last second of the current minute. 
@@ -92,8 +92,8 @@ release_features () {
 			printf "%s\n" "Log Messages Read since $last_commit_date" >> debug.txt;
 			printf "%s" "$new_log_messages" >> debug.txt;
 			mergeResult=$?;
-			printf "\n%s\n" "step3=git tag -a v$current_qa_tag_version testmaster -m Releasing version v$current_qa_tag_version from QA to Production" >> debug.txt;
-			step3=$(git tag -a v$current_qa_tag_version testmaster -m "$new_log_messages");
+			printf "\n%s\n" "step3=git tag -a v$current_qa_tag_version $1 -m Releasing version v$current_qa_tag_version from QA to Production" >> debug.txt;
+			step3=$(git tag -a v$current_qa_tag_version $1 -m "$new_log_messages");
 			printf "%s\n" "step4=git push origin v$current_qa_tag_version" >> debug.txt;
 			step4=$(git push origin v$current_qa_tag_version);
 
@@ -285,10 +285,10 @@ setup_master_branch () {
 
 initialize_tmp_files () {
 
-	result=$(setup_master_branch "testmaster");
+	result=$(setup_master_branch "$1");
 
 	$(echo "" > temp_merge_msg && echo "" > debug.txt && echo "" > error.txt);
 
 }
 
-initialize_tmp_files;
+$(initialize_tmp_files "$1");

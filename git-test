@@ -8,6 +8,8 @@ arguments="";
 
 do_pr=true;
 
+branch_name="testmaster";
+
 while [ "$1" != "" ]; do
     printf "\nRead next command argument as [$1]\n" >> debug.txt;
     if [ "$1" == "--no-pull-request" ];
@@ -22,7 +24,7 @@ while [ "$1" != "" ]; do
     fi;
 done
 
-lv=$(test_feature "$arguments" "$do_pr")
+lv=$(test_feature "$arguments" "$do_pr");
 if [ $lv == 0 ]; then
 echo 'Run "git log -1" to see the list of tickets added to this QA branch';
 else
