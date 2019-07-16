@@ -1,6 +1,4 @@
-
-<img src="logo.png" width="250">
-=
+# Git Star
 A set of drop-dead simple commands to:
 * (S)tart a feature 
   * Ex: "git start feature-abc1234"
@@ -14,3 +12,4 @@ A set of drop-dead simple commands to:
 * Excellent guide on how to setup your own homebrew install
 	* https://tech.cars.com/distributing-your-home-grown-tools-to-the-masses-with-homebrew-acb7a62518a8
 
+<img src="logo.png" width="250">
