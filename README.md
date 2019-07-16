@@ -1,4 +1,4 @@
-![Git Star](logo.png | width=250)
+![Git Star](logo.png){:height="50%" width="50%"}
 A set of drop-dead simple commands to:
 * (S)tart a feature 
   * Ex: "git start feature-abc1234"
