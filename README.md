@@ -1,10 +1,8 @@
-<p>
-<img src="logo.png" width="250" style="padding: 0 15px; float: left;">
-</p>
-<p>
-	Float around text
-</p>
+
 <h3>Git Star</h3>
+<img src="logo.png" width="250" style="padding: 0 15px; float: left;">
+
+
 A set of drop-dead simple commands to:
 <ul>
 	<li><ul><b>(S)</b>tart a feature 
