@@ -1,8 +1,10 @@
 # Git Star  
-<img src="logo.png" width="250">
-<ul>
-	<li>Hello
-		</ul>
+<p>
+<img src="logo.png" width="400" style="padding: 0 15px; float: left;">
+</p>
+<p>
+	Float around text
+</p>
 A set of drop-dead simple commands to:
 * (S)tart a feature 
   * Ex: "git start feature-abc1234"
