@@ -1,15 +1,14 @@
-# git-star 
-![Git Star](logo.png =250x)
+
+<h3>Git Star : A simple and powerful git workflow alternative</h3>
+<img src="logo.png" width="250" style="padding: 0 15px; float: left;">
+
+
 A set of drop-dead simple commands to:
-* (S)tart a feature 
-![git start](git-start.png =400x)
-	
-* (T)est the feature on a combined branch 
-![git test](git-test.png =400x)
-* (A)pprove the generated pull request (optional)
-* (R)elease the set of features to the master branch 
-![git release](git-release.png =400x)
-
-* Excellent guide on how to setup your own homebrew install
-	* https://tech.cars.com/distributing-your-home-grown-tools-to-the-masses-with-homebrew-acb7a62518a8
-
+<ul>
+	<li><ul><b>(S)</b>tart a feature 
+		<li><img src="git-start.png" width="450" style="padding: 0 15px; float: left;"></ul>
+	<li><ul><b>(T)</b>est the feature on a combined test branch after (A)pproving the pull request (optional)
+		<li><img src="git-test.png" width="450" style="padding: 0 15px; float: left;"></ul>
+	<li><ul><b>(R)</b>elease the set of features to production
+		<li><img src="git-release.png" width="450" style="padding: 0 15px; float: left;"></ul>	
+</ul>
