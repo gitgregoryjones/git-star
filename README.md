@@ -2,13 +2,13 @@
 ![Git Star](logo.png =250x)
 A set of drop-dead simple commands to:
 * (S)tart a feature 
-  * Ex: "git start feature-abc1234"
+![git start](git-start.png =400x)
+	
 * (T)est the feature on a combined branch 
-  * Ex: "git test feature-1, hotfix-one"
-* (A)sk other developers to review the generated pull request
-  * note: the request is generated automatically
+![git test](git-test.png =400x)
+* (A)pprove the generated pull request (optional)
 * (R)elease the set of features to the master branch 
-  * Ex: "git release"
+![git release](git-release.png =400x)
 
 * Excellent guide on how to setup your own homebrew install
 	* https://tech.cars.com/distributing-your-home-grown-tools-to-the-masses-with-homebrew-acb7a62518a8
