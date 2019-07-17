@@ -1,6 +1,7 @@
 
 <h3>Git Star : A simple and powerful git workflow alternative</h3>
 <img src="logo.png" width="250" style="padding: 0 15px; float: left;">
+<code>$>brew install git-star</code>
 
 
 A set of drop-dead simple commands to:
