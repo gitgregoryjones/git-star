@@ -9,6 +9,6 @@ A set of drop-dead simple commands to:
 		<li type="none"><img src="git-start.png" zwidth="450" style="padding: 0 15px; float: left;"></ul>
 	<li><ul><b>(T)</b>est the feature on a combined test branch after <b>(A)</b>pproving the pull request (optional)
 		<li type="none"><img src="git-test.png" zwidth="450" style="padding: 0 15px; float: left;"></ul>
-	<li><ul><b>(R)</b>elease the set of features to production
+	<li><ul><b>(R)</b>elease the set of features to the production branch
 		<li type="none"><img src="git-release.png" zwidth="75%" style="padding: 0 15px; float: left;"></ul>	
 </ul>
