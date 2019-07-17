@@ -10,5 +10,5 @@ A set of drop-dead simple commands to:
 	<li><ul><b>(T)</b>est the feature on a combined test branch after (A)pproving the pull request (optional)
 		<li><img src="git-test.png" width="450" style="padding: 0 15px; float: left;"></ul>
 	<li><ul><b>(R)</b>elease the set of features to production
-		<li><img src="git-release.png" width="450" style="padding: 0 15px; float: left;"></ul>	
+		<li><img src="git-release.png" width="550" style="padding: 0 15px; float: left;"></ul>	
 </ul>
