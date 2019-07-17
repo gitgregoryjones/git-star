@@ -5,7 +5,7 @@
 
 A set of drop-dead simple commands to:
 <ul>
-	<li><h3><ul><b>(S)</b>tart a feature </h3>
+	<li><h1><ul><b>(S)</b>tart a feature </h1>
 		<li type="none"><img src="git-start.png" zwidth="450" style="padding: 0 15px; float: left;"></ul>
 	<li><ul><b>(T)</b>est the feature on a combined test branch after <b>(A)</b>pproving the pull request (optional)
 		<li type="none"><img src="git-test.png" zwidth="450" style="padding: 0 15px; float: left;"></ul>
