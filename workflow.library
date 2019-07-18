@@ -301,9 +301,19 @@ setup_master_branch () {
 	$(rm masterbranch.txt branch_found.txt tagoutput.txt base_tag_version_found.txt);
 }
 
-run_cmd() {
+run_cmd () {
 
 	result=$($1 1>>debug.txt 2>>error.txt);
+
+	rtn=$?;
+
+	if [ $rtn -gt  0 ]
+		then
+		 printf "%s\n" "Statement [$1] [$rtn] failed. Exiting..." >> error.txt;
+		 $cleanup_tmp_files;
+		 exit 1;
+	fi;
+		
 
 	echo $result;
 }
