@@ -1,13 +1,9 @@
 #!/bin/bash
-printf "%s\n" "Successfully loaded workflow library";
-printf "%s\n" "version:$(pwd)";
+#printf "%s\n" "Successfully loaded workflow library" >> debug.txt;
+#printf "%s\n" "version:$(pwd)" >> debug.txt;
 
 
-common_func () { 
-printf "%sAnd This is my common func\n";
-
-}
-
+fake_master_branch="testmaster";
 
 increment_version_number () {
 	local latest_tag=$(git tag | sort -o g.txt && tail -1 g.txt)
@@ -26,7 +22,6 @@ increment_version_number () {
 get_current_version_number () {
 
 	local latest_tag=$(git tag | sort -o version.txt &&  tail -1 version.txt)
-        printf "%s\n" "BEGIN:Get Current Version Release Tag Number" >> debug.txt;
         local tag_version=`cut -d'v' -f2 <<< $latest_tag`
 	$(rm version.txt)
 	printf "Current Release Number is v$tag_version\n" >> debug.txt;
@@ -40,7 +35,7 @@ create_feature () {
 	current_release_tag=$(get_current_version_number);
 
 	#branch feature from current release tag
-	git checkout -b $1 $current_release_tag;
+	$(run_cmd "git checkout -b $1 $current_release_tag");
 	if [ $? == 0 ];
 	then
 		printf "%s\n" "Created branch $1 from last good production release [$current_release_tag]" >> debug.txt;
@@ -257,9 +252,15 @@ short_circuit (){
 }
 
 cleanup_tmp_files () {
-	printf "************************ ERRORS BELOW ************************\n";
+	printf "************************ GITHUB SERVER MESSAGES ************************\n";
 	cat error.txt && rm error.txt;
-	printf "\n*************************** COMMITS FOR THIS RELEASE ***************\n"; 
+	commits=$(cat temp_merge_msg);
+	if [ -z "$commits" ];
+		then
+		x=1;
+	else
+		printf "\n*************************** COMMITS FOR THIS RELEASE ***************\n"; 
+	fi;
 	cat temp_merge_msg && rm temp_merge_msg;
 	printf "\n*************************** DEBUG MSGS FOR THIS RELEASE ***************\n";
 	cat debug.txt && rm debug.txt;
@@ -268,27 +269,59 @@ cleanup_tmp_files () {
 
 setup_master_branch () {
 
-	master_branch=$(git ls-remote | grep $1);
-	if [ -z "$master_branch" ];
+	$(git ls-remote 1>masterbranch.txt 2>>error.txt); 
+
+	$(grep "$1" masterbranch.txt 1>branch_found.txt 2>>error.txt); 
+
+
+	count=$(wc -c < branch_found.txt | sed -e s/[[:space:]]//g);
+	
+	
+	if [ $count == 0 ];
 		then
 		printf "%s\n" "Creating master branch [$1] since does not exist" >> debug.txt; 
-		new_branch=$(git checkout -b $1 && git push -u origin $1);
+		$(run_cmd "git checkout -b $1"); 
+		$(run_cmd "git push -u origin $1");
+	else
+		printf "%s\n" "Master branch [$1] found. No need to recreate" >> debug.txt;
+	
 	fi;
-	tags=$(git ls-remote --tags | grep v1.0.0);
-	if [ -z "$tags" ];
+
+	$(git ls-remote --tags 1>tagoutput.txt 2>>error.txt &&  grep v1.0.0 tagoutput.txt >base_tag_version_found.txt 2>>error.txt);
+
+	count=$(wc -c < base_tag_version_found.txt | sed -e s/[[:space:]]//g);
+
+	if [ $count == 0 ];
 		then
 		printf "%s\n" "No Release tags found. Initializing first tags for any future releases. Note: nothing pushed to production. Just initializing..." >> debug.txt;
-		remote_tags=$(git tag v1.0.0 && git push origin v1.0.0);
+		$(run_cmd "git tag v1.0.0");
+		$(run_cmd "git push origin v1.0.0");
 	fi;
+
+	$(rm masterbranch.txt branch_found.txt tagoutput.txt base_tag_version_found.txt);
+}
+
+run_cmd() {
+
+	result=$($1 1>>debug.txt 2>>error.txt);
+
+	echo $result;
 }
 	
 
 initialize_tmp_files () {
-
-	result=$(setup_master_branch "$1");
 
 	$(echo "" > temp_merge_msg && echo "" > debug.txt && echo "" > error.txt);
 
 }
 
 $(initialize_tmp_files "$1");
+
+if [ -z "$fake_master_branch" ]
+	then
+		result=$(setup_master_branch "master");
+	else
+		result=$(setup_master_branch "testmaster");
+fi;
+		
+
