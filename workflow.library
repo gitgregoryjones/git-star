@@ -63,14 +63,18 @@ release_features () {
         else
 		printf "%s\n" "Latest QA branch is $latest_qa_branch" >> debug.txt;
                 local current_qa_tag_version=`cut -d'v' -f2 <<< $latest_qa_branch`
-		pull_requests=$(hub pr list -L 1 -b "QAv$current_qa_tag_version");
+		pull_requests=$(hub pr list -L 10 -b "QAv$current_qa_tag_version");
 		if [ -z "$pull_requests" ];
                	then
 			#ok to merge to master	
-			printf "%s\n" "step1=git checkout QAv$current_tag_version && git pull && git checkout master && git pull" >> debug.txt;
-			step0=$(git checkout QAv$current_qa_tag_version && git pull);
+			printf "%s\n" "step1=git checkout QAv$current_qa_tag_version && git pull && git checkout master && git pull" >> debug.txt;
+			$(run_cmd "git checkout QAv$current_qa_tag_version");
+			$(run_cmd "git pull");
 			
-			step1=$(git checkout $1 && git pull origin );
+			$(run_cmd "git checkout $1"); 
+			$(run_cmd "git pull origin");
+			last_commit_date=$(git log -n 1 | grep Date | cut -d':' -f2 -f3 | (read lstring; echo "$lstring:60"));
+			printf "%s\n" "Before merge into $1 the last_commit_date is $last_commit_date" >> debug.txt;
 			# Get log messages from QA branch to annotate the tag
 			#last_commit_date=$(git log -n 1 | grep Date | cut -d':' -f2 -f3 -f4);
 			#Artficially set last commit time to last second of the current minute. 
@@ -78,32 +82,33 @@ release_features () {
 			#when I use the git log --after="some date" cmd later
 			#git log does not by default exclude the date/time you specify in this arg. oh well 
 			#last_commit_date=$(git log -n 1 | grep Date | cut -d':' -f2 -f3 -f4);
-			last_commit_date=$(git log -n 1 | grep Date | cut -d':' -f2 -f3 | (read lstring; echo "$lstring:60"));
+			#last_commit_date=$(git log -n 1 | grep Date | cut -d':' -f2 -f3 | (read lstring; echo "$lstring:60"));
 
 			printf "%s\n" "step2=git merge QAv$current_qa_tag_version" >> debug.txt;
-			step2=$(git merge --no-ff QAv$current_qa_tag_version);
+			$(run_cmd "git merge --no-ff QAv$current_qa_tag_version");
+			printf "%s\n" "Last commit date is $last_commit_date" >> debug.txt;
 			new_log_messages=$(git log --oneline --after="$last_commit_date");
-			step21=$(git commit -m "$new_log_messages");
+			$(run_cmd "git commit -m $new_log_messages");
 			printf "%s\n" "Log Messages Read since $last_commit_date" >> debug.txt;
 			printf "%s" "$new_log_messages" >> debug.txt;
 			mergeResult=$?;
 			printf "\n%s\n" "step3=git tag -a v$current_qa_tag_version $1 -m Releasing version v$current_qa_tag_version from QA to Production" >> debug.txt;
-			step3=$(git tag -a v$current_qa_tag_version $1 -m "$new_log_messages");
+			$(run_cmd "git tag -a v$current_qa_tag_version $1 -m '$new_log_messages'");
 			printf "%s\n" "step4=git push origin v$current_qa_tag_version" >> debug.txt;
-			step4=$(git push origin v$current_qa_tag_version);
+			$(run_cmd "git push origin v$current_qa_tag_version");
 
-			step5=$(git push);
 			if [ "$?" == 0 ];
 				then
-				printf "%s\n" "Pushing Changes of v$current_qa_tag_version master to repo" >> debug.txt;
-				abcd=$(git push);
+				printf "%s\n" "Pushed Changes of v$current_qa_tag_version master to repo" >> debug.txt;
+				#abcd=$(git push);
 			fi;
 			if [ "$mergeResult" == 0 ];
 			then
 				#delete all remote branches and local branches of QA Releases
-				cleanbranches=$(git branch -r | grep QA |  while read x; do echo $x; q=$(cut -d'/' -f2 <<< $x); git push origin --delete $q; done);
+				#abc=$(git branch -r | grep QA |  while read x; do echo $x; q=$(cut -d'/' -f2 <<< $x); git push origin --delete $q; done);
 			#delete all local branches
-				localcleanbranches=$(git branch | grep QA |  while read x; do echo $x; git branch -D $x; done);
+				x=1;
+				#localcleanbranches=$(git branch | grep QA |  while read x; do echo $x; git branch -D $x; done);
 			else
 				printf "%s\n" "Experienced Error Merging.  Will exit so conflicts can be resolved by you.Run git status for more details" >> error.txt;
 			fi;
@@ -160,7 +165,7 @@ test_feature () {
 			local new_qa_tag_version_as_number=$(($current_qa_tag_version_as_number + 1))
 			local new_qa_tag_version_as_string=`echo v$new_qa_tag_version_as_number | sed 's/\([0-9]\)/\1\./g' | sed 's/\.$//g'`
 			new_qa_branch=`echo QA$new_qa_tag_version_as_string`;
-			local rsp=$(git checkout -b $new_qa_branch $latest_qa_branch)
+			$(run_cmd "git checkout -b $new_qa_branch $latest_qa_branch");
 			printf "qa Branch Found. Incremented it to $new_qa_tag_version_as_string\n" >> debug.txt; 
 			else
 			#else use current QA branch since it has open pull requests
@@ -172,7 +177,8 @@ test_feature () {
 	
 
 		#Do a git pull of the QA branch to get all updates
-		abc=$(git checkout $new_qa_branch && git pull origin $new_qa_branch);
+		$(run_cmd "git checkout $new_qa_branch"); 
+		$(run_cmd "git pull origin $new_qa_branch");
 
 		#loop Through branches and test to see if valid
 		found_good_branch=false;
@@ -184,12 +190,12 @@ test_feature () {
 				if [ $generate_pull_request == false ];
 				then
         				rsp2=$(update_commit_log_and_merge_branch "$i" "$new_qa_branch")
-        				acmd=$(git merge --no-ff $new_qa_branch);
+        				$(run_cmd "git merge --no-ff $new_qa_branch");
 				else
 					#generate pull request
-					pushit=$(git push -u origin $i);
+					$(run_cmd "git push -u origin $i");
 					#push new_qa_branch first for hub command
-					cmd=$(git push -u origin $new_qa_branch)
+					$(run_cmd "git push -u origin $new_qa_branch")
 					printf "%s\n" "Generating Pull Request for $new_qa_branch <- $i" >> debug.txt;
 					huburl=$(hub pull-request -m "Please review changes to $i" -b $new_qa_branch);
 					printf "%s\n" "Pull Request URL is $huburl" >> debug.txt;
@@ -202,13 +208,14 @@ test_feature () {
 
 		if [ "$found_good_branch" == true ];
 		then
-			cmd=$(git push -u origin $new_qa_branch)
+			$(run_cmd "git push -u origin $new_qa_branch")
 			printf "Successfully pushed remote branch $new_qa_branch\n" >> debug.txt;
-			cmd=$(git checkout ${ADDR[0]});
+			$(run_cmd "git checkout ${ADDR[0]}");
 			echo 0;
 		else
                 	printf "Failed to find any valid branches to merge. Deleting Empty QA Release Branch $new_qa_branch\n" >> error.txt;
-			rm_cmd=$(git checkout master && git branch -D $new_qa_branch);
+			$(run_cmd "git checkout master");
+			$(run_cmd "git branch -D $new_qa_branch");
 			echo 1;
 		fi;
 
@@ -218,11 +225,12 @@ test_feature () {
 
 test_branch_for_existence() {
 
-	cmd=$(git checkout $1 && git push -u origin $1);
+	$(run_cmd "git checkout $1"); 
+	$(run_cmd "git push -u origin $1");
 
 	if [ "$?" == 0 ];
 	  then
-		cmd=$(git pull);
+		$(run_cmd "git pull");
 	fi;
 
 	echo $?;
@@ -232,15 +240,15 @@ test_branch_for_existence() {
 
 update_commit_log_and_merge_branch() {
 	 var=$2
-	git checkout $2;
+	$(run_cmd "git checkout $2");
         printf 'Merge branch %s into %s\n\n::SUMMARY::\nBranch %s commits:\n' $1 $var $1 >> temp_merge_msg 
         git log --format=format:'%s' $var..$1 >> temp_merge_msg 
         printf '\n\nBranch %s commits:\n' $var >> temp_merge_msg 
         git log --format=format:'%s' $1..$var >> temp_merge_msg  
         printf '\n\n* * * * * * * * * * * * * * * * * * * * * * * * *\n::DETAILS::\n' >> temp_merge_msg 
         git log --left-right $var...$1 >> temp_merge_msg
-        git merge --no-ff $1
-        git commit -F temp_merge_msg; 
+        $(run_cmd "git merge --no-ff $1");
+        $(run_cmd "git commit -F temp_merge_msg"); 
 	printf "Done Merging Branch $1 to $2\n" >> debug.txt;
 }
 
