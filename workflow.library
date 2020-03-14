@@ -87,13 +87,19 @@ release_features () {
 			printf "%s\n" "step2=git merge QAv$current_qa_tag_version" >> debug.txt;
 			$(run_cmd "git merge --no-ff QAv$current_qa_tag_version");
 			printf "%s\n" "Last commit date is $last_commit_date" >> debug.txt;
-			new_log_messages=$(git log --oneline --after="$last_commit_date");
-			$(run_cmd "git commit -m $new_log_messages");
+			$(echo "Releasing version v$current_qa_tag_version from QA to Production" > out.txt);
+			$(git log --oneline --after="$last_commit_date" >> out.txt);
+			
+			#$(run_cmd "git commit -F out.txt");
 			printf "%s\n" "Log Messages Read since $last_commit_date" >> debug.txt;
-			printf "%s" "$new_log_messages" >> debug.txt;
+			$(cat out.txt >> debug.txt);
 			mergeResult=$?;
-			printf "\n%s\n" "step3=git tag -a v$current_qa_tag_version $1 -m Releasing version v$current_qa_tag_version from QA to Production" >> debug.txt;
-			$(run_cmd "git tag -a v$current_qa_tag_version $1 -m '$new_log_messages'");
+			$(run_cmd "git push -u origin $1");
+			#$(run_cmd "git status");
+			printf "\n%s\n" "step3=git tag -a v$current_qa_tag_version $1 -F out.txt" >> debug.txt;
+			#$(rm out.txt);
+			#$(run_cmd "git tag -a v$current_qa_tag_version $1 -m '$new_log_messages'");
+			$(git tag -a v$current_qa_tag_version $1 -F out.txt);
 			printf "%s\n" "step4=git push origin v$current_qa_tag_version" >> debug.txt;
 			$(run_cmd "git push origin v$current_qa_tag_version");
 
@@ -248,7 +254,8 @@ update_commit_log_and_merge_branch() {
         printf '\n\n* * * * * * * * * * * * * * * * * * * * * * * * *\n::DETAILS::\n' >> temp_merge_msg 
         git log --left-right $var...$1 >> temp_merge_msg
         $(run_cmd "git merge --no-ff $1");
-        $(run_cmd "git commit -F temp_merge_msg"); 
+        temp_merge_msg=$(echo $temp_merge_msg | tr "'", " ");
+        $(run_cmd "git commit -F 'temp_merge_msg'"); 
 	printf "Done Merging Branch $1 to $2\n" >> debug.txt;
 }
 
