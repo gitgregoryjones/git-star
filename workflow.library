@@ -5,6 +5,100 @@
 
 fake_master_branch="testmaster";
 
+
+
+
+as_number()
+{
+        local the_version=`cut -d'v' -f2 <<< $1`
+
+        tv=$(echo $the_version | sed 's/\.//g');
+
+        echo $tv;
+}
+
+function join { local IFS="$1"; shift; echo "$*"; }
+
+
+publish_to_stage()
+{
+		#current_tag=get_current_version_number;
+		staging_found=$(git branch | grep staging);
+
+		if [ -z "$staging_found" ]
+		then
+			printf "LOCAL Staging branch was not found for this repo. No need to purge\n" >> debug.txt;
+		else
+			printf "Purging local staging and rebuilding\n" >> debug.txt;
+
+			$(run_cmd "git branch -D staging");
+
+			remote_staging=$(git branch -r | grep staging);
+
+			if [ -z "$remote_staging" ]
+			then
+				printf "REMOTE Staging branch was not found for this repo. No need to purge\n" >> debug.txt;
+			else
+				printf "Purging REMOTE staging and rebuilding" >> debug.txt;
+				$(run_cmd "git push origin --delete staging");
+			fi;
+
+			
+		fi;
+
+		$(create_feature staging);
+
+		#$(git checkout -b staging);
+		last_production_push=($(git log --pretty=format:%ct -n 1));
+
+		echo ${last_production_push[@]};
+
+		printf "Last production push was [%s]\n" "${last_production_push[@]}" >> debug.txt;
+
+		#IFS="," read id status branch feature mergedate <<< "$i";
+
+		IFS="," read production_build <<< "${last_production_push[@]}"
+
+        arr=($(hub pr list -L 100 -s merged -f '%i,%pC%pS,%B,%H,%mt '))
+
+        params=();
+
+        for i in "${arr[@]}"
+        do
+                IFS="," read id status branch feature mergeddate <<< "$i";
+
+                #echo "branch is ${branch} and feature is ${feature}";
+
+                #mynum=$(as_number $branch);
+
+                #ctag=$(as_number $current_tag);
+               
+
+                if [[ $mergeddate -gt $production_build ]]
+
+                then
+                		 printf "feature [%s] [%s] created after last production build [%s]...Adding to staging now\n"   "$feature" "$mergeddate" "$production_build"  >> debug.txt;
+
+                		$(run_cmd "git merge $feature");
+                		if [ $? != 0 ];
+                		then
+                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
+                		else
+                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+                		fi;
+                        #echo "feature $feature should be added because $mynum is greater than $ctag";
+                        params+=("$feature");
+                fi;
+
+        done
+
+        $(run_cmd "git push -u origin staging");
+
+        $(run_cmd "git checkout ${params[0]}");
+}
+
+
+
 increment_version_number () {
 	local latest_tag=$(git tag | sort -o g.txt && tail -1 g.txt)
 	printf "%s\n" "Call to increment_version_number" >> debug.txt;
@@ -134,6 +228,7 @@ release_features () {
 
 test_feature () {
 	#Set delimiter locally to comma
+
 	printf "Branch names BEFORE is [%s]\n" "$1" >> debug.txt;
 	generate_pull_request=$2;
 	IFS=',' read -ra ADDR <<< "$1";
@@ -146,7 +241,8 @@ test_feature () {
 		#create qa branch based off last master release tag
 		#else increment qa_branch version 
 		#and create new qa branch from release tag
-		if [ ${qa_branch_length} == 0 ]; 
+
+		if [ "${qa_branch_length}" == 0 ]; 
 		then 
 			printf "\nQA Branch NOT found. Create Version from Release Tag\n" >> debug.txt;
 			local release_tag_version_number=$(get_current_version_number);
@@ -160,32 +256,37 @@ test_feature () {
 		local current_qa_tag_version=`cut -d'v' -f2 <<< $latest_qa_branch`	
 		local current_qa_tag_version_as_number=`echo $current_qa_tag_version | sed 's/\.//g'`
 
+		
 		# Test to see if open pull requests for current QA branch. Yes, use this branch.  
 		# No, increment branch because branch is ready for QA testing and is officially closed
 		printf "%s\nLooking for Open Pull Requests for QAv$current_qa_tag_version" >> debug.txt;
 		pull_requests=$(hub pr list -L 1 -b "QAv$current_qa_tag_version");
-		printf "%s\nOpen Pull Requests for QAv$current_qa_tag_version are $pull_requests" >> debug.txt;
+		printf "%s\nOpen Pull Requests for QAv$current_qa_tag_version are [$pull_requests]\n" >> debug.txt;
 			if [ -z "$pull_requests" ];
 			then
 			#increment to next QA branch
 			local new_qa_tag_version_as_number=$(($current_qa_tag_version_as_number + 1))
 			local new_qa_tag_version_as_string=`echo v$new_qa_tag_version_as_number | sed 's/\([0-9]\)/\1\./g' | sed 's/\.$//g'`
 			new_qa_branch=`echo QA$new_qa_tag_version_as_string`;
-			$(run_cmd "git checkout -b $new_qa_branch $latest_qa_branch");
+			
+			ignore=$(run_cmd "git checkout -b $new_qa_branch $latest_qa_branch");
 			printf "qa Branch Found. Incremented it to $new_qa_tag_version_as_string\n" >> debug.txt; 
+			
 			else
 			#else use current QA branch since it has open pull requests
 			local new_qa_tag_version_as_string=`echo v$current_qa_tag_version_as_number| sed 's/\([0-9]\)/\1\./g' | sed 's/\.$//g'`;
 			printf "\nReusing QA Branch Found Since it has open pull requests. [$new_qa_tag_version_as_string]\n" >> debug.txt; 
 			new_qa_branch=`echo QA$new_qa_tag_version_as_string`;
+			$(run_cmd "git checkout $new_qa_branch"); 
 			fi;
 		fi;
 	
+		
 
 		#Do a git pull of the QA branch to get all updates
-		$(run_cmd "git checkout $new_qa_branch"); 
-		$(run_cmd "git pull origin $new_qa_branch");
-
+		
+		ignore=$(run_cmd "git pull origin $new_qa_branch");
+		
 		#loop Through branches and test to see if valid
 		found_good_branch=false;
 		for i in "${ADDR[@]}"; do
@@ -219,7 +320,7 @@ test_feature () {
 			$(run_cmd "git checkout ${ADDR[0]}");
 			echo 0;
 		else
-                	printf "Failed to find any valid branches to merge. Deleting Empty QA Release Branch $new_qa_branch\n" >> error.txt;
+            printf "Failed to find any valid branches to merge. Deleting Empty QA Release Branch $new_qa_branch\n" >> error.txt;
 			$(run_cmd "git checkout master");
 			$(run_cmd "git branch -D $new_qa_branch");
 			echo 1;
@@ -317,6 +418,8 @@ setup_master_branch () {
 }
 
 run_cmd () {
+
+	
 
 	result=$($1 1>>debug.txt 2>>error.txt);
 
