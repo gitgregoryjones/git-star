@@ -83,13 +83,13 @@ publish_to_staging()
 
 		IFS="," read production_build <<< "${last_production_push[@]}"
 
-        arr=($(hub pr list -L 100 -s merged -f '%i,%pC%pS,%B,%H,%mt '))
+        arr=($(hub pr list -L 100 -s merged -f '%i,%pC%pS,%B,%H,%mt,%sm'))
 
         params=();
 
         for i in "${arr[@]}"
         do
-                IFS="," read id status branch feature mergeddate <<< "$i";
+                IFS="," read id status branch feature mergeddate sha <<< "$i";
 
                 #echo "branch is ${branch} and feature is ${feature}";
 
@@ -117,7 +117,7 @@ publish_to_staging()
 		                		then
 		                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
 		                		else
-		                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+		                			printf "Merged feature %s with commit id [%s] into staging\n" "$feature" "$sha">> debug.txt;
 		                		fi;
 		                        #echo "feature $feature should be added because $mynum is greater than $ctag";
 		                        params+=("$feature");
