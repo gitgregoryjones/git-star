@@ -139,7 +139,7 @@ publish_to_staging()
 			                		then
 			                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
 			                		else
-			                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+			                			printf "Merged feature %s with commit id [%s] into staging\n" "$feature" "$sha">> debug.txt;
 			                		fi;
 			                        #echo "feature $feature should be added because $mynum is greater than $ctag";
 			                        params+=("$feature");
@@ -158,7 +158,7 @@ publish_to_staging()
 	                		then
 	                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
 	                		else
-	                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+	                			printf "Merged feature %s with commit id [%s] into staging\n" "$feature" "$sha">> debug.txt;
 	                		fi;
 	                        #echo "feature $feature should be added because $mynum is greater than $ctag";
 	                        params+=("$feature");	
