@@ -208,7 +208,7 @@ create_or_checkout_feature () {
 	if [ $(test_branch_for_existence "$1") == 0 ];
 	then
 		#branch feature from current release tag
-		trash_msg=$(git checkout -b $1 $current_release_tag && git push --set-upstream origin $1);
+		trash_msg=$(git checkout -b $1 $current_release_tag && git pull && git push --set-upstream origin $1);
 		
 		printf "%s\n" "Created branch $1 from last good production release [$current_release_tag]" >> debug.txt;
 	else
