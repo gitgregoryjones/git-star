@@ -3,8 +3,11 @@
 
 source workflow.library
 
+ignore=(git fetch)
 
 arguments="";
+
+
 
 if [ $# != 1 ]; 
 then
@@ -12,7 +15,7 @@ then
 	printf "%sUsage: git create-feature [feature-branch-name]" >> error.txt;
 else
 
-	lv=$(create_feature "$1");
+	lv=$(create_or_checkout_feature "$1");
 fi;
 
 cleanup_tmp_files;

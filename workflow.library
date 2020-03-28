@@ -20,8 +20,33 @@ as_number()
 function join { local IFS="$1"; shift; echo "$*"; }
 
 
-publish_to_stage()
+publish_to_staging_and_exclude(){
+
+	printf "Staging will EXCLUDE features [%s] from latest QA branch\n" "$1" >> debug.txt;
+	publish_to_staging $1 "exclude"
+
+}
+
+publish_to_staging_and_include(){
+
+	printf "Staging will INCLUDE all APPROVED PRs for features [%s] in latest QA branch\n" "$1" >> debug.txt;
+	publish_to_staging $1 "include"
+
+}
+
+
+publish_to_staging()
 {
+		
+		IFS=',' read -ra features_list <<< "$1";
+
+		include_or_exclude_feature_flag="$2";
+
+		if [ -z "$2" ]
+		then
+			printf "All approved PRs from latest QA branch will be merged to Staging\n" >> debug.txt;
+		fi;
+		
 		#current_tag=get_current_version_number;
 		staging_found=$(git branch | grep staging);
 
@@ -46,12 +71,12 @@ publish_to_stage()
 			
 		fi;
 
-		$(create_feature staging);
+		ignore=$(create_or_checkout_feature staging);
 
 		#$(git checkout -b staging);
 		last_production_push=($(git log --pretty=format:%ct -n 1));
 
-		echo ${last_production_push[@]};
+		#echo ${last_production_push[@]};
 
 		printf "Last production push was [%s]\n" "${last_production_push[@]}" >> debug.txt;
 
@@ -77,17 +102,68 @@ publish_to_stage()
                 if [[ $mergeddate -gt $production_build ]]
 
                 then
-                		 printf "feature [%s] [%s] created after last production build [%s]...Adding to staging now\n"   "$feature" "$mergeddate" "$production_build"  >> debug.txt;
-
-                		$(run_cmd "git merge $feature");
-                		if [ $? != 0 ];
+                		if [[ "${include_or_exclude_feature_flag}"  == "exclude" ]]
                 		then
-                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
-                		else
-                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
-                		fi;
-                        #echo "feature $feature should be added because $mynum is greater than $ctag";
-                        params+=("$feature");
+	                		#Did user send list of features to --exclude from stage
+	                		if [[ ! " ${features_list[@]} " =~ " ${feature} " ]] 
+	                		then
+
+		                		printf "feature [%s] [%s] created after last production build [%s]...Adding to staging now\n"   "$feature" "$mergeddate" "$production_build"  >> debug.txt;
+
+		                		#ignore=$(run_cmd "create_or_checkout_feature $feature");
+
+		                		$(run_cmd "git merge $feature");
+
+		                		if [ $? != 0 ];
+		                		then
+		                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
+		                		else
+		                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+		                		fi;
+		                        #echo "feature $feature should be added because $mynum is greater than $ctag";
+		                        params+=("$feature");
+	                		else	
+		                    	printf "skipping feature [%s] since user specified this value on command line\n" "$feature" >> debug.txt;
+	                    	fi;
+	                    elif [[ "${include_or_exclude_feature_flag}" == "include" ]]
+	                    then
+	                    		#Did user send list of features to --exclude from stage
+		                		if [[ " ${features_list[@]} " =~ " ${feature} " ]] 
+		                		then
+			                		printf "feature [%s] [%s] created after last production build [%s]...Adding to staging now\n"   "$feature" "$mergeddate" "$production_build"  >> debug.txt;
+
+			                		#ignore=$(run_cmd "create_or_checkout_feature $feature");
+
+			                		$(run_cmd "git merge $feature");
+
+			                		if [ $? != 0 ];
+			                		then
+			                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
+			                		else
+			                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+			                		fi;
+			                        #echo "feature $feature should be added because $mynum is greater than $ctag";
+			                        params+=("$feature");
+		                		else	
+			                    	printf "skipping feature [%s] since user specified this value on command line\n" "$feature" >> debug.txt;
+		                    	fi;
+	                    else
+	                    	
+	                    	printf "feature [%s] [%s] created after last production build [%s]...Adding to staging now\n"   "$feature" "$mergeddate" "$production_build"  >> debug.txt;
+
+	                		#ignore=$(run_cmd "create_or_checkout_feature $feature");
+
+	                		$(run_cmd "git merge $feature");
+
+	                		if [ $? != 0 ];
+	                		then
+	                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
+	                		else
+	                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+	                		fi;
+	                        #echo "feature $feature should be added because $mynum is greater than $ctag";
+	                        params+=("$feature");	
+                    	fi;
                 fi;
 
         done
@@ -124,16 +200,90 @@ get_current_version_number () {
 }
 
 # Input feature name
-create_feature () {
+create_or_checkout_feature () {
 	#get current release version to branch from
 	current_release_tag=$(get_current_version_number);
 
-	#branch feature from current release tag
-	$(run_cmd "git checkout -b $1 $current_release_tag");
-	if [ $? == 0 ];
+
+
+	if [ $(test_branch_for_existence "$1") == 0 ];
 	then
+		#branch feature from current release tag
+		trash_msg=$(git checkout -b $1 $current_release_tag && git push --set-upstream origin $1);
+		
 		printf "%s\n" "Created branch $1 from last good production release [$current_release_tag]" >> debug.txt;
+	else
+		b=$(git checkout $1 && git pull origin $1)
+		printf "%s\n%s" "Working on branch $1" "$b" >> debug.txt;
+
+	fi
+
+	echo 0;
+
+}
+
+build_release_from_staging(){
+
+	staging_branch=$(git branch -r | grep staging);
+
+	staging_create_date=$(git show --summary --pretty=format:%ct `git merge-base staging $1`);
+
+	last_production_push=$(git log --pretty=format:%ct -n 1);
+
+	if [ -z "$staging_branch" ]
+	then
+		printf "\nStaging Branch Not Found. Nothing to release... Exiting\n" >> error.txt;
+	
+	else
+
+		printf "%s\n" "step1=git checkout $1" >> debug.txt;
+
+		$(run_cmd "git checkout $1");
+
+		$(run_cmd "git pull");
+
+		new_tag_number=$(increment_version_number);
+
+		$(run_cmd "git fetch");
+
+		last_commit_date=$(git log -n 1 | grep Date | cut -d':' -f2 -f3 | (read lstring; echo "$lstring:60"));
+
+		printf "%s\n" "Before merge into $1 the last_commit_date is $last_commit_date" >> debug.txt;
+
+		printf "%s\n" "step2=git merge staging" >> debug.txt;
+
+		$(run_cmd "git merge --no-ff staging");
+
+		$(echo "Releasing version $new_tag_number from staging to Production" > out.txt);
+		lines=$(git log --oneline --after="$last_commit_date");
+		
+		
+		
+		if [ -z "$lines" ]
+		then
+			printf "\nNothing new to release to production... Exiting\n" >> debug.txt;
+			exit 0;
+		else
+			printf "%s\n" "Log Messages Read since $last_commit_date" >> debug.txt;
+			$(git log --oneline --after="$last_commit_date" >> out.txt);
+			$(cat out.txt >> debug.txt);
+			printf "%s\n" "step2=git merge staging" >> debug.txt;
+		fi;
+
+		$(run_cmd "git push -u origin $1");
+		printf "\n%s\n" "step3=git tag -a $new_tag_number $1 -F out.txt" >> debug.txt;
+		#$(rm out.txt);
+		#$(run_cmd "git tag -a v$current_qa_tag_version $1 -m '$new_log_messages'");
+		$(git tag -a $new_tag_number $1 -F out.txt);
+		printf "%s\n" "step4=git push origin $new_tag_number" >> debug.txt;
+		$(run_cmd "git push origin $new_tag_number");
+		if [ "$?" == 0 ];
+		then
+			printf "%s\n" "Successfully released changes of $new_tag_number from staging to $1" >> debug.txt;
+			$(run_cmd "rm out.txt");
+		fi;
 	fi;
+
 }
 
 release_features () {
@@ -181,19 +331,19 @@ release_features () {
 			printf "%s\n" "step2=git merge QAv$current_qa_tag_version" >> debug.txt;
 			$(run_cmd "git merge --no-ff QAv$current_qa_tag_version");
 			printf "%s\n" "Last commit date is $last_commit_date" >> debug.txt;
-			$(echo "Releasing version v$current_qa_tag_version from QA to Production" > out.txt);
-			$(git log --oneline --after="$last_commit_date" >> out.txt);
+			$(echo "Releasing version v$current_qa_tag_version from QA to Production" > temp_merge_msg);
+			$(git log --oneline --after="$last_commit_date" >> temp_merge_msg);
 			
 			#$(run_cmd "git commit -F out.txt");
 			printf "%s\n" "Log Messages Read since $last_commit_date" >> debug.txt;
-			$(cat out.txt >> debug.txt);
+			$(cat temp_merge_msg >> debug.txt);
 			mergeResult=$?;
 			$(run_cmd "git push -u origin $1");
 			#$(run_cmd "git status");
-			printf "\n%s\n" "step3=git tag -a v$current_qa_tag_version $1 -F out.txt" >> debug.txt;
+			printf "\n%s\n" "step3=git tag -a v$current_qa_tag_version $1 -F temp_merge_msg" >> debug.txt;
 			#$(rm out.txt);
 			#$(run_cmd "git tag -a v$current_qa_tag_version $1 -m '$new_log_messages'");
-			$(git tag -a v$current_qa_tag_version $1 -F out.txt);
+			$(git tag -a v$current_qa_tag_version $1 -F temp_merge_msg);
 			printf "%s\n" "step4=git push origin v$current_qa_tag_version" >> debug.txt;
 			$(run_cmd "git push origin v$current_qa_tag_version");
 
@@ -228,6 +378,8 @@ release_features () {
 
 test_feature () {
 	#Set delimiter locally to comma
+
+	ignore=$(git fetch);
 
 	printf "Branch names BEFORE is [%s]\n" "$1" >> debug.txt;
 	generate_pull_request=$2;
@@ -277,7 +429,7 @@ test_feature () {
 			local new_qa_tag_version_as_string=`echo v$current_qa_tag_version_as_number| sed 's/\([0-9]\)/\1\./g' | sed 's/\.$//g'`;
 			printf "\nReusing QA Branch Found Since it has open pull requests. [$new_qa_tag_version_as_string]\n" >> debug.txt; 
 			new_qa_branch=`echo QA$new_qa_tag_version_as_string`;
-			$(run_cmd "git checkout $new_qa_branch"); 
+			#$(run_cmd "git checkout $new_qa_branch"); 
 			fi;
 		fi;
 	
@@ -285,44 +437,76 @@ test_feature () {
 
 		#Do a git pull of the QA branch to get all updates
 		
-		ignore=$(run_cmd "git pull origin $new_qa_branch");
-		
+		#ignore=$(git pull origin $new_qa_branch);
+
+		#ignore=$(git pull origin $new_qa_branch);		
+
+
 		#loop Through branches and test to see if valid
 		found_good_branch=false;
 		for i in "${ADDR[@]}"; do
    		 	# process "$i"
 			printf "Processing Branch [%s]\n" $i >> debug.txt;
-			if [ $(test_branch_for_existence $i) == 0 ];
+			if [ $(create_or_checkout_feature $i) == 0 ];
 			then
+				ignore=$(git checkout "$i");
+				$(run_cmd "git push -u origin $i");
+				#push new_qa_branch first for hub command
+				
+				ignore=$(git checkout "$new_qa_branch");
+				ignore=$(git fetch)
+				$(run_cmd "git push -u origin $new_qa_branch")
+
+				printf "%s\n" "Generating Pull Request for $new_qa_branch <- $i" >> debug.txt;
+				huburl=$(hub pull-request -h $i -m "Please review changes to $i" -b $new_qa_branch);
+				printf "%s\n" "Pull Request URL is $huburl" >> debug.txt;
+				found_good_branch=true;
+
 				if [ $generate_pull_request == false ];
 				then
-        				rsp2=$(update_commit_log_and_merge_branch "$i" "$new_qa_branch")
-        				$(run_cmd "git merge --no-ff $new_qa_branch");
-				else
+        				#rsp2=$(update_commit_log_and_merge_branch "$i" "$new_qa_branch")
+        				#$(run_cmd "git merge --no-ff $new_qa_branch");
+
+					#		$(run_cmd "git push -u origin $i");
+					#		$(run_cmd "git push -u origin $new_qa_branch")
+					#		printf "%s\n" "Generating Pull Request for $new_qa_branch <- $i" >> debug.txt;
+					#		huburl=$(hub pull-request -h $i -m "Auto reviewing changes to $i" -b $new_qa_branch);
+			        		
+			        		mergecmd=$(echo "$huburl" | cut -d '/' -f4 -f5 -f6)
+			        		pull_request_id=$(echo "$huburl" | cut -d '/' -f7)
+			        		mergecmd="/repos/${mergecmd}s/${pull_request_id}/merge";
+			        		printf "Autoclosing Pull Request using cmd hub api -XPUT ${mergecmd} <- $i\n" >> debug.txt;
+			        		$(run_cmd "hub api -XPUT ${mergecmd}");
+			        	
+        				
+				#else
 					#generate pull request
-					$(run_cmd "git push -u origin $i");
+				#	$(run_cmd "git push -u origin $i");
 					#push new_qa_branch first for hub command
-					$(run_cmd "git push -u origin $new_qa_branch")
-					printf "%s\n" "Generating Pull Request for $new_qa_branch <- $i" >> debug.txt;
-					huburl=$(hub pull-request -m "Please review changes to $i" -b $new_qa_branch);
-					printf "%s\n" "Pull Request URL is $huburl" >> debug.txt;
+				#	$(run_cmd "git push -u origin $new_qa_branch")
+				#	printf "%s\n" "Generating Pull Request for $new_qa_branch <- $i" >> debug.txt;
+				#	huburl=$(hub pull-request -h $i -m "Please review changes to $i" -b $new_qa_branch);
+				#	printf "%s\n" "Pull Request URL is $huburl" >> debug.txt;
 				fi;
-				found_good_branch=true;
+					
 			else
-                		printf "Failed to find branch $i. So it WILL NOT be merged into this QA Release \n" >> error.txt;
+                	printf "Failed to find branch $i. So it WILL NOT be merged into this QA Release \n" >> error.txt;
 			fi;
 		done
 
 		if [ "$found_good_branch" == true ];
 		then
-			$(run_cmd "git push -u origin $new_qa_branch")
-			printf "Successfully pushed remote branch $new_qa_branch\n" >> debug.txt;
+			ignore=$(git fetch)
+			#$(run_cmd "git push -u origin $new_qa_branch")
+			ignore=$(git pull origin $new_qa_branch)
+			printf "\nSuccessfully pushed remote branch $new_qa_branch\n" >> debug.txt;
+			
 			$(run_cmd "git checkout ${ADDR[0]}");
 			echo 0;
 		else
             printf "Failed to find any valid branches to merge. Deleting Empty QA Release Branch $new_qa_branch\n" >> error.txt;
-			$(run_cmd "git checkout master");
-			$(run_cmd "git branch -D $new_qa_branch");
+			#$(run_cmd "git checkout staging");
+			#$(run_cmd "git branch -D $new_qa_branch");
 			echo 1;
 		fi;
 
@@ -332,15 +516,27 @@ test_feature () {
 
 test_branch_for_existence() {
 
-	$(run_cmd "git checkout $1"); 
-	$(run_cmd "git push -u origin $1");
+	#$(run_cmd "git checkout $1"); 
+	
+	#$(run_cmd "git push -u origin $1");
 
-	if [ "$?" == 0 ];
+    local trash_msg=$(git fetch);
+
+	branch_exists=$(git branch -r | grep $1 | git branch | grep $1);
+
+	
+
+	if [ -z "$branch_exists" ];
 	  then
-		$(run_cmd "git pull");
+		#a=$(run_cmd "git pull");
+		printf "$branch_exists does not exist...creating\n" >> debug.txt;
+		echo 0;
+	else
+		echo 1;
+		printf "$branch_exists already exists..performing git checkout\n" >> debug.txt;
 	fi;
 
-	echo $?;
+	#echo $?;
 
 }
 
@@ -356,7 +552,8 @@ update_commit_log_and_merge_branch() {
         git log --left-right $var...$1 >> temp_merge_msg
         $(run_cmd "git merge --no-ff $1");
         temp_merge_msg=$(echo $temp_merge_msg | tr "'", " ");
-        $(run_cmd "git commit -F 'temp_merge_msg'"); 
+        ignore=$(git fetch)
+        $(run_cmd "git commit -F temp_merge_msg"); 
 	printf "Done Merging Branch $1 to $2\n" >> debug.txt;
 }
 
@@ -370,17 +567,30 @@ short_circuit (){
 cleanup_tmp_files () {
 	printf "************************ GITHUB SERVER MESSAGES ************************\n";
 	cat error.txt && rm error.txt;
+	#clear;
 	commits=$(cat temp_merge_msg);
 	if [ -z "$commits" ];
 		then
 		x=1;
 	else
 		printf "\n*************************** COMMITS FOR THIS RELEASE ***************\n"; 
+		cat temp_merge_msg && rm temp_merge_msg;
+		#printf "\n*************************** ************************ ***************\n"; 
 	fi;
-	cat temp_merge_msg && rm temp_merge_msg;
+	
 	printf "\n*************************** DEBUG MSGS FOR THIS RELEASE ***************\n";
 	cat debug.txt && rm debug.txt;
 	printf "\n*************************** END OF DEBUG MSGS *************************\n";
+
+	if [ -f out.txt ]
+	then
+		rm out.txt;
+	fi;
+
+	if [ -f temp_merge_msg ]
+	then
+		rm temp_merge_msg;
+	fi;
 }
 
 setup_master_branch () {
