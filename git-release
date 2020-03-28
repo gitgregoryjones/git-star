@@ -24,9 +24,11 @@ echo "Fake Master Branch is $fake_master_branch";
 
 if [ -z "$fake_master_branch" ]
 	then
-	lv=$(release_features "master");
+	#lv=$(release_features "master");
+    lv=$(build_release_from_staging "master");
 	else
-	lv=$(release_features "$fake_master_branch");
+	lv=$(build_release_from_staging "$fake_master_branch");
+    #lv=$(release_features "$fake_master_branch");
 fi;
 	
 cleanup_tmp_files;

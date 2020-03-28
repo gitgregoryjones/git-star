@@ -3,8 +3,45 @@
 
 source workflow.library
 
+ignore=(git fetch)
+
+while [ "$1" != "" ]; do
+    printf "\nRead next command argument as [$1]\n" >> debug.txt;
+    if [[ "$1" = --exclude* ]];
+    then
+        printf "\nFound the -exclude features flag [$1]\n" >> debug.txt;
+        ef=$(echo "$1" | cut -d = -f2)
+        
+        printf "\nWill attempt to exclude features [$ef]\n" >> debug.txt;
+        publish_to_staging_and_exclude $ef;
+        cleanup_tmp_files;
+        #publish_to_staging $ef;
+        exit 0;
+        #shift
+    elif [[ "$1" = --include* ]]
+    then
+        printf "\nFound the --include features flag [$1]\n" >> debug.txt;
+        ef=$(echo "$1" | cut -d = -f2)
+        
+        printf "\nWill attempt to include only features [$ef]\n" >> debug.txt;
+        publish_to_staging_and_include $ef;
+        cleanup_tmp_files;
+        #publish_to_staging $ef;
+        exit 0;
+        
+        #shift
+    else
+        printf "\tUnknown argument $1\n\tUsage: git staging [--exclude=feat1,feat2,feat.. | --include=feat1,feat..n]\n";
+
+        exit 0;
+        # Shift all the parameters down by one
+        #shift
+    fi;
+done
+
+#exit 0;
                         
-publish_to_stage;
+publish_to_staging $ef;
 	
 cleanup_tmp_files;
 
