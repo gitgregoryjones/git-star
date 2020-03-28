@@ -48,7 +48,7 @@ publish_to_staging()
 		fi;
 		
 		#current_tag=get_current_version_number;
-		staging_found=$(git branch | grep staging);
+		staging_found=$(git branch | grep "^\s*staging");
 
 		if [ -z "$staging_found" ]
 		then
