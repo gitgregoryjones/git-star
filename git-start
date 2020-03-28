@@ -3,6 +3,7 @@
 
 source workflow.library
 
+ignore=(git fetch)
 
 arguments="";
 
