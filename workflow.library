@@ -56,14 +56,14 @@ publish_to_staging()
 		else
 			printf "Purging local staging and rebuilding\n" >> debug.txt;
 
-			$(run_cmd "git branch -D staging");
-
-			
+			$(run_cmd "git branch -D staging");		
 		fi;
+
 		remote_staging=$(git branch -r | grep "^\s*staging");
+
 		if [ -z "$remote_staging" ]
 			then
-				printf "REMOTE Staging branch was not found for this repo. No need to purge\n" >> debug.txt;
+				printf "The REMOTE Staging branch was not found for this repo. No need to purge\n" >> debug.txt;
 			else
 				printf "Purging REMOTE staging and rebuilding\n" >> debug.txt;
 				$(run_cmd "git push origin --delete staging");
@@ -521,9 +521,7 @@ test_branch_for_existence() {
 
     local trash_msg=$(git fetch);
 
-	branch_exists=$(git branch -r | grep $1 | git branch | grep $1);
-
-	
+	branch_exists=$(git branch -r | grep "\s*origin/$1$" | git branch | grep "\s*$1$");
 
 	if [ -z "$branch_exists" ];
 	  then
