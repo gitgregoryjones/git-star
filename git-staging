@@ -1,0 +1,10 @@
+#!/bin/bash
+#reset File
+
+source workflow.library
+
+                        
+publish_to_stage;
+	
+cleanup_tmp_files;
+

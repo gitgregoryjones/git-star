@@ -3,9 +3,31 @@
 
 source workflow.library
 
+                        
+while [ "$1" != "" ]; do
+    printf "\nRead next command argument as [$1]\n" >> debug.txt;
+    if [ "$1" == "--merge-branch" ]
+        then
+        shift
+	branch_name="$1";
+        printf "%s\n" "Found custom merge branch flag with value of [$1] for branch name\n";
+	shift
+    else
+    arguments="$arguments$1";
+    # Shift all the parameters down by one
+    shift
+    fi;
+done
+
+echo "Fake Master Branch is $fake_master_branch";
 
 
-lv=$(release_features);
-
+if [ -z "$fake_master_branch" ]
+	then
+	lv=$(release_features "master");
+	else
+	lv=$(release_features "$fake_master_branch");
+fi;
+	
 cleanup_tmp_files;
 
