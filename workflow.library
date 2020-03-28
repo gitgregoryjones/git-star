@@ -83,7 +83,7 @@ publish_to_staging()
 
 		IFS="," read production_build <<< "${last_production_push[@]}"
 
-        arr=($(hub pr list -L 100 -s merged -f '%i,%pC%pS,%B,%H,%mt,%sm'))
+        arr=($(hub pr list -L 100 -s merged -f '%i,%pC%pS,%B,%H,%mt,%sm '))
 
         params=();
 
@@ -139,7 +139,7 @@ publish_to_staging()
 			                		then
 			                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
 			                		else
-			                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+			                			printf "Merged feature %s with commit id [%s] into staging\n" "$feature" "$sha">> debug.txt;
 			                		fi;
 			                        #echo "feature $feature should be added because $mynum is greater than $ctag";
 			                        params+=("$feature");
@@ -158,7 +158,7 @@ publish_to_staging()
 	                		then
 	                			printf "Failed to merge feature branch no longer exists [%s]\n" "$feature" >> debug.txt;
 	                		else
-	                			printf "Merged feature %s into staging\n" "$feature" >> debug.txt;
+	                			printf "Merged feature %s with commit id [%s] into staging\n" "$feature" "$sha">> debug.txt;
 	                		fi;
 	                        #echo "feature $feature should be added because $mynum is greater than $ctag";
 	                        params+=("$feature");	
@@ -208,7 +208,7 @@ create_or_checkout_feature () {
 	if [ $(test_branch_for_existence "$1") == 0 ];
 	then
 		#branch feature from current release tag
-		trash_msg=$(git checkout -b $1 $current_release_tag && git push --set-upstream origin $1);
+		trash_msg=$(git checkout -b $1 $current_release_tag && git pull && git push --set-upstream origin $1);
 		
 		printf "%s\n" "Created branch $1 from last good production release [$current_release_tag]" >> debug.txt;
 	else
