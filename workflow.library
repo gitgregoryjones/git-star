@@ -44,7 +44,7 @@ publish_to_staging()
 
 		if [ -z "$2" ]
 		then
-			printf "All approved PRs from latest QA branch will be merged to Staging\n" >> debug.txt;
+			printf "ALL approved PRs from latest QA branch will be merged to Staging\n" >> debug.txt;
 		fi;
 		
 		#current_tag=get_current_version_number;
@@ -58,16 +58,15 @@ publish_to_staging()
 
 			$(run_cmd "git branch -D staging");
 
-			remote_staging=$(git branch -r | grep staging);
-
-			if [ -z "$remote_staging" ]
+			
+		fi;
+		remote_staging=$(git branch -r | grep staging);
+		if [ -z "$remote_staging" ]
 			then
 				printf "REMOTE Staging branch was not found for this repo. No need to purge\n" >> debug.txt;
 			else
 				printf "Purging REMOTE staging and rebuilding" >> debug.txt;
 				$(run_cmd "git push origin --delete staging");
-			fi;
-
 			
 		fi;
 
