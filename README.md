@@ -181,9 +181,7 @@
 	</tr>
 	<tr>
 		<td colspan="3">
-			<p>&nbsp;</p>
-			<p>&nbsp;</p>
-			<!-- acceptance image goes here //-->
+			<img src="git-release.png" zwidth="75%" style="padding: 0 15px; float: left;">
 		</td>
 	</tr>	
 </table>
