@@ -83,7 +83,7 @@ publish_to_staging()
 
 		IFS="," read production_build <<< "${last_production_push[@]}"
 
-        arr=($(hub pr list -L 100 -s merged -f '%i,%pC%pS,%B,%H,%mt,%sm'))
+        arr=($(hub pr list -L 100 -s merged -f '%i,%pC%pS,%B,%H,%mt,%sm '))
 
         params=();
 
