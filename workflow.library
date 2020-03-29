@@ -1,11 +1,49 @@
 #!/bin/bash
 #printf "%s\n" "Successfully loaded workflow library" >> debug.txt;
 #printf "%s\n" "version:$(pwd)" >> debug.txt;
+#0 = DEBUG, 1=INFO 2=WARN 3=ERROR
 
+log_level=0
 
 fake_master_branch="testmaster";
 
 
+debug(){
+
+	if [ $log_level -ge 0 ]
+	then
+		true;
+	else
+		false;
+	fi;
+
+}
+
+info(){
+	if [ $log_level -ge 1 ]
+	then
+		true;
+	else
+		false;
+	fi;
+}
+
+warn(){
+	if [ $log_level -ge 2 ]
+	then
+		true;
+	else
+		false;
+	fi;
+}
+
+error(){
+	#always return errors
+	if [ true ]
+	then
+		true;
+	fi;
+}
 
 
 as_number()
@@ -210,10 +248,10 @@ create_or_checkout_feature () {
 		#branch feature from current release tag
 		trash_msg=$(git checkout -b $1 $current_release_tag && git push --set-upstream origin $1);
 		
-		printf "%s\n" "Created branch $1 from last good production release [$current_release_tag]" >> debug.txt;
+		info && printf "%s\n" "Created branch $1 from last good production release [$current_release_tag]" >> debug.txt;
 	else
 		b=$(git checkout $1 && git pull origin $1)
-		printf "%s\n%s" "Working on branch $1" "$b" >> debug.txt;
+		info && printf "%s\n%s" "Working on branch $1" "$b" >> debug.txt;
 
 	fi
 
@@ -562,22 +600,24 @@ short_circuit (){
 }
 
 cleanup_tmp_files () {
-	printf "************************ GITHUB SERVER MESSAGES ************************\n";
-	cat error.txt && rm error.txt;
+	
+	error && printf "************************ GITHUB SERVER MESSAGES ************************\n";
+	
+	error && cat error.txt && rm error.txt;
 	#clear;
 	commits=$(cat temp_merge_msg);
 	if [ -z "$commits" ];
 		then
 		x=1;
 	else
-		printf "\n*************************** COMMITS FOR THIS RELEASE ***************\n"; 
-		cat temp_merge_msg && rm temp_merge_msg;
+		debug && printf "\n*************************** COMMITS FOR THIS RELEASE ***************\n"; 
+		debug && cat temp_merge_msg && rm temp_merge_msg;
 		#printf "\n*************************** ************************ ***************\n"; 
 	fi;
 	
-	printf "\n*************************** DEBUG MSGS FOR THIS RELEASE ***************\n";
-	cat debug.txt && rm debug.txt;
-	printf "\n*************************** END OF DEBUG MSGS *************************\n";
+	debug && printf "\n*************************** DEBUG MSGS  ********************************\n";
+	debug && cat debug.txt && rm debug.txt;
+	debug printf "\n*************************** END OF DEBUG MSGS ***********************************\n";
 
 	if [ -f out.txt ]
 	then

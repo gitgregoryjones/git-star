@@ -11,8 +11,8 @@ arguments="";
 
 if [ $# != 1 ]; 
 then
-	printf "*********************** ERRORS ******************\n" >> error.txt;
-	printf "%sUsage: git create-feature [feature-branch-name]" >> error.txt;
+	error && printf "*********************** ERRORS ******************\n" >> error.txt;
+	error && printf "%sUsage: git create-feature [feature-branch-name]" >> error.txt;
 else
 
 	lv=$(create_or_checkout_feature "$1");
